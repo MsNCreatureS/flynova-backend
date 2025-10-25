@@ -1,4 +1,4 @@
-const { uploadAvatar, uploadLogo, uploadLivery, uploadEvent, uploadDocument } = require('../config/cloudinary');
+const { uploadAvatar, uploadLogo, uploadLivery, uploadEvent, uploadDocument, uploadToHostinger } = require('../config/hostinger-upload');
 
 // Middleware pour gérer les erreurs d'upload
 const handleUploadError = (err, req, res, next) => {
@@ -14,12 +14,18 @@ const handleUploadError = (err, req, res, next) => {
 
 // Middleware pour upload avatar
 const uploadAvatarMiddleware = (req, res, next) => {
-  uploadAvatar.single('avatar')(req, res, (err) => {
+  uploadAvatar.single('avatar')(req, res, async (err) => {
     if (err) return handleUploadError(err, req, res, next);
     
-    // Ajouter l'URL Cloudinary à req.file
+    // Upload vers Hostinger FTP et obtenir l'URL publique
     if (req.file) {
-      req.file.cloudinaryUrl = req.file.path;
+      try {
+        const publicUrl = await uploadToHostinger(req.file.path, 'avatars');
+        req.file.publicUrl = publicUrl;
+        req.file.path = publicUrl; // Pour compatibilité avec le code existant
+      } catch (uploadError) {
+        return handleUploadError(uploadError, req, res, next);
+      }
     }
     next();
   });
@@ -27,11 +33,17 @@ const uploadAvatarMiddleware = (req, res, next) => {
 
 // Middleware pour upload logo VA
 const uploadLogoMiddleware = (req, res, next) => {
-  uploadLogo.single('logo')(req, res, (err) => {
+  uploadLogo.single('logo')(req, res, async (err) => {
     if (err) return handleUploadError(err, req, res, next);
     
     if (req.file) {
-      req.file.cloudinaryUrl = req.file.path;
+      try {
+        const publicUrl = await uploadToHostinger(req.file.path, 'logos');
+        req.file.publicUrl = publicUrl;
+        req.file.path = publicUrl;
+      } catch (uploadError) {
+        return handleUploadError(uploadError, req, res, next);
+      }
     }
     next();
   });
@@ -39,11 +51,17 @@ const uploadLogoMiddleware = (req, res, next) => {
 
 // Middleware pour upload livrée
 const uploadLiveryMiddleware = (req, res, next) => {
-  uploadLivery.single('livery')(req, res, (err) => {
+  uploadLivery.single('livery')(req, res, async (err) => {
     if (err) return handleUploadError(err, req, res, next);
     
     if (req.file) {
-      req.file.cloudinaryUrl = req.file.path;
+      try {
+        const publicUrl = await uploadToHostinger(req.file.path, 'liveries');
+        req.file.publicUrl = publicUrl;
+        req.file.path = publicUrl;
+      } catch (uploadError) {
+        return handleUploadError(uploadError, req, res, next);
+      }
     }
     next();
   });
@@ -51,11 +69,17 @@ const uploadLiveryMiddleware = (req, res, next) => {
 
 // Middleware pour upload image événement
 const uploadEventMiddleware = (req, res, next) => {
-  uploadEvent.single('image')(req, res, (err) => {
+  uploadEvent.single('image')(req, res, async (err) => {
     if (err) return handleUploadError(err, req, res, next);
     
     if (req.file) {
-      req.file.cloudinaryUrl = req.file.path;
+      try {
+        const publicUrl = await uploadToHostinger(req.file.path, 'events');
+        req.file.publicUrl = publicUrl;
+        req.file.path = publicUrl;
+      } catch (uploadError) {
+        return handleUploadError(uploadError, req, res, next);
+      }
     }
     next();
   });
@@ -63,11 +87,17 @@ const uploadEventMiddleware = (req, res, next) => {
 
 // Middleware pour upload document
 const uploadDocumentMiddleware = (req, res, next) => {
-  uploadDocument.single('document')(req, res, (err) => {
+  uploadDocument.single('document')(req, res, async (err) => {
     if (err) return handleUploadError(err, req, res, next);
     
     if (req.file) {
-      req.file.cloudinaryUrl = req.file.path;
+      try {
+        const publicUrl = await uploadToHostinger(req.file.path, 'documents');
+        req.file.publicUrl = publicUrl;
+        req.file.path = publicUrl;
+      } catch (uploadError) {
+        return handleUploadError(uploadError, req, res, next);
+      }
     }
     next();
   });
