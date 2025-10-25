@@ -6,7 +6,8 @@ const handleUploadError = (err, req, res, next) => {
     console.error('Upload error:', err);
     return res.status(400).json({ 
       error: 'Upload failed', 
-      message: err.message 
+      message: err.message,
+      code: err.code
     });
   }
   next();
@@ -14,16 +15,25 @@ const handleUploadError = (err, req, res, next) => {
 
 // Middleware pour upload avatar
 const uploadAvatarMiddleware = (req, res, next) => {
+  console.log('uploadAvatarMiddleware called');
   uploadAvatar.single('avatar')(req, res, async (err) => {
-    if (err) return handleUploadError(err, req, res, next);
+    if (err) {
+      console.error('Multer error:', err);
+      return handleUploadError(err, req, res, next);
+    }
+    
+    console.log('File after multer:', req.file);
     
     // Upload vers Hostinger FTP et obtenir l'URL publique
     if (req.file) {
       try {
+        console.log('Starting FTP upload for:', req.file.path);
         const publicUrl = await uploadToHostinger(req.file.path, 'avatars');
+        console.log('FTP upload success:', publicUrl);
         req.file.publicUrl = publicUrl;
         req.file.path = publicUrl; // Pour compatibilité avec le code existant
       } catch (uploadError) {
+        console.error('FTP upload error:', uploadError);
         return handleUploadError(uploadError, req, res, next);
       }
     }

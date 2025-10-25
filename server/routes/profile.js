@@ -216,12 +216,27 @@ router.post('/avatar', authMiddleware, uploadAvatarMiddleware, async (req, res) 
   try {
     const userId = req.user.id;
     
+    console.log('POST /api/profile/avatar - Request received');
+    console.log('- User ID:', userId);
+    console.log('- File received:', req.file ? 'Yes' : 'No');
+    console.log('- Files object:', req.files);
+    console.log('- Body:', req.body);
+    
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      return res.status(400).json({ 
+        error: 'No file uploaded',
+        hint: 'Send a file with field name "avatar"',
+        received: {
+          files: req.files,
+          body: req.body
+        }
+      });
     }
 
-    // Cloudinary URL is in req.file.path
+    // Hostinger FTP URL is in req.file.path
     const avatarUrl = req.file.path;
+
+    console.log('- Avatar URL from FTP:', avatarUrl);
 
     // Update user avatar
     await db.query(
