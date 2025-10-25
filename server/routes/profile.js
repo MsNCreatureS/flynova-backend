@@ -1,37 +1,9 @@
 const express = require('express');
 const db = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
-const multer = require('multer');
-const path = require('path');
+const { uploadAvatarMiddleware } = require('../middleware/upload');
 
 const router = express.Router();
-
-// Configure multer for avatar uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'public/uploads/avatars/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
-  fileFilter: function (req, file, cb) {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'));
-    }
-  }
-});
 
 // Get user profile
 router.get('/:userId', async (req, res) => {
@@ -124,15 +96,16 @@ router.get('/:userId', async (req, res) => {
 });
 
 // Update user profile
-router.put('/me', authMiddleware, upload.single('avatar'), async (req, res) => {
+router.put('/me', authMiddleware, uploadAvatarMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
     const { first_name, last_name, avatar_url } = req.body;
 
-    // Determine avatar URL (uploaded file or external URL)
+    // Determine avatar URL (Cloudinary URL from uploaded file or external URL)
     let finalAvatarUrl = avatar_url || null;
     if (req.file) {
-      finalAvatarUrl = '/uploads/avatars/' + req.file.filename;
+      // Cloudinary URL is in req.file.path
+      finalAvatarUrl = req.file.path;
     }
 
     await db.query(
