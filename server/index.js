@@ -66,6 +66,72 @@ app.use('/api/simbrief', simbriefRoutes);
 app.use('/api/acars', acarsRoutes);
 app.use('/api/superadmin', superAdminRoutes);
 
+// API Root - Liste des endpoints disponibles
+app.get('/api', (req, res) => {
+  res.json({
+    message: '✈️ FlyNova API - Virtual Airline Management Platform',
+    version: '1.0.0',
+    status: 'online',
+    endpoints: {
+      health: '/api/health',
+      auth: {
+        base: '/api/auth',
+        routes: ['POST /register', 'POST /login', 'POST /forgot-password', 'POST /reset-password']
+      },
+      virtualAirlines: {
+        base: '/api/virtual-airlines',
+        routes: ['GET /', 'POST /', 'GET /:id', 'PUT /:id']
+      },
+      fleet: {
+        base: '/api/fleet',
+        routes: ['GET /:vaId', 'POST /:vaId', 'PUT /:id', 'DELETE /:id']
+      },
+      routes: {
+        base: '/api/routes',
+        routes: ['GET /:vaId', 'POST /:vaId', 'PUT /:id', 'DELETE /:id']
+      },
+      flights: {
+        base: '/api/flights',
+        routes: ['GET /:vaId', 'POST /book', 'GET /my-flights', 'POST /pirep']
+      },
+      admin: {
+        base: '/api/admin',
+        routes: ['GET /:vaId/pilots', 'PUT /:vaId/pilots/:id', 'GET /:vaId/pireps', 'PUT /:vaId/pireps/:id']
+      },
+      downloads: {
+        base: '/api/downloads',
+        routes: ['GET /', 'GET /:vaId', 'POST /:vaId', 'PUT /:id', 'DELETE /:id']
+      },
+      airports: {
+        base: '/api/airports',
+        routes: ['GET /search?q=XXX']
+      },
+      aircraft: {
+        base: '/api/aircraft',
+        routes: ['GET /search?q=XXX']
+      },
+      events: {
+        base: '/api/events',
+        routes: ['GET /', 'POST /', 'GET /:id', 'PUT /:id', 'DELETE /:id']
+      },
+      simbrief: {
+        base: '/api/simbrief',
+        routes: ['POST /generate']
+      },
+      acars: {
+        base: '/api/acars',
+        routes: ['POST /position', 'POST /telemetry']
+      },
+      superadmin: {
+        base: '/api/superadmin',
+        routes: ['GET /vas', 'PUT /vas/:id/status']
+      }
+    },
+    documentation: 'https://github.com/MsNCreatureS/flynova-backend',
+    repository: 'https://github.com/MsNCreatureS/flynova-backend'
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
