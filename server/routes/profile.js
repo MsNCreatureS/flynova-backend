@@ -148,7 +148,13 @@ router.get('/:userId', async (req, res) => {
 });
 
 // Update user profile
-router.put('/me', authMiddleware, uploadAvatarMiddleware, async (req, res) => {
+router.put('/me', authMiddleware, (req, res, next) => {
+  // Si un fichier est présent, utiliser le middleware Cloudinary
+  if (req.is('multipart/form-data')) {
+    return uploadAvatarMiddleware(req, res, next);
+  }
+  next();
+}, async (req, res) => {
   try {
     const userId = req.user.id;
     const { first_name, last_name, avatar_url } = req.body;
@@ -177,7 +183,35 @@ router.put('/me', authMiddleware, uploadAvatarMiddleware, async (req, res) => {
     });
   } catch (error) {
     console.error('Update profile error:', error);
-    res.status(500).json({ error: 'Failed to update profile' });
+    res.status(500).json({ error: 'Failed to update profile', details: error.message });
+  }
+});
+
+// Upload avatar (separate route for file upload)
+router.post('/avatar', authMiddleware, uploadAvatarMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Cloudinary URL is in req.file.path
+    const avatarUrl = req.file.path;
+
+    // Update user avatar
+    await db.query(
+      'UPDATE users SET avatar_url = ? WHERE id = ?',
+      [avatarUrl, userId]
+    );
+
+    res.json({ 
+      message: 'Avatar uploaded successfully',
+      avatarUrl: avatarUrl
+    });
+  } catch (error) {
+    console.error('Upload avatar error:', error);
+    res.status(500).json({ error: 'Failed to upload avatar', details: error.message });
   }
 });
 
