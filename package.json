@@ -4,7 +4,7 @@
   "description": "FlyNova - Virtual Airline Management Platform - Backend API",
   "main": "server/index.js",
   "scripts": {
-    "start": "node init-directories.js && node server/index.js",
+    "start": "node server/index.js",
     "dev": "node init-directories.js && nodemon server/index.js",
     "migrate": "node server/migrations/run.js",
     "import:data": "node server/scripts/import-openflights.js",
