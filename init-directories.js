@@ -11,6 +11,9 @@ const directories = [
   'public/uploads',
   'public/uploads/events',
   'public/uploads/logos',
+  'public/uploads/avatars',
+  'public/uploads/documents',
+  'public/uploads/liveries',
   'logs'
 ];
 
