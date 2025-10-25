@@ -148,27 +148,40 @@ router.get('/:userId', async (req, res) => {
 });
 
 // Update user profile
-router.put('/me', authMiddleware, (req, res, next) => {
-  // Si un fichier est présent, utiliser le middleware Cloudinary
-  if (req.is('multipart/form-data')) {
-    return uploadAvatarMiddleware(req, res, next);
-  }
-  next();
-}, async (req, res) => {
+router.put('/me', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
     const { first_name, last_name, avatar_url } = req.body;
 
-    // Determine avatar URL (Cloudinary URL from uploaded file or external URL)
-    let finalAvatarUrl = avatar_url || null;
-    if (req.file) {
-      // Cloudinary URL is in req.file.path
-      finalAvatarUrl = req.file.path;
+    // Construire la requête UPDATE dynamiquement
+    const updates = [];
+    const values = [];
+
+    if (first_name !== undefined) {
+      updates.push('first_name = ?');
+      values.push(first_name || null);
     }
 
+    if (last_name !== undefined) {
+      updates.push('last_name = ?');
+      values.push(last_name || null);
+    }
+
+    if (avatar_url !== undefined) {
+      updates.push('avatar_url = ?');
+      values.push(avatar_url || null);
+    }
+
+    // Si aucune mise à jour
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    values.push(userId);
+
     await db.query(
-      'UPDATE users SET first_name = ?, last_name = ?, avatar_url = ? WHERE id = ?',
-      [first_name || null, last_name || null, finalAvatarUrl, userId]
+      `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
+      values
     );
 
     // Get updated user data
