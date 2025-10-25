@@ -7,7 +7,7 @@
     "start": "node server/index.js",
     "dev": "node init-directories.js && nodemon server/index.js",
     "migrate": "node server/migrations/run.js",
-    "import:data": "node server/scripts/import-openflights.js",
+    "import:openflights": "node scripts/import-openflights.js",
     "postinstall": "node init-directories.js"
   },
   "keywords": [
@@ -20,6 +20,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.3",
