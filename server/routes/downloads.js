@@ -1,42 +1,10 @@
 const express = require('express');
-const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const db = require('../config/database');
 const { authMiddleware, checkVARole } = require('../middleware/auth');
+const { uploadDocumentMiddleware, uploadLiveryMiddleware } = require('../middleware/upload');
 
 const router = express.Router();
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../public/uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10485760 }, // 10MB default
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|pdf|zip/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Invalid file type'));
-    }
-  }
-});
 
 // Get downloads for a VA
 router.get('/:vaId', async (req, res) => {
@@ -64,7 +32,15 @@ router.get('/:vaId', async (req, res) => {
 });
 
 // Add download (file upload OR external URL) (admin only)
-router.post('/:vaId/add', authMiddleware, checkVARole(['owner', 'admin']), upload.single('file'), async (req, res) => {
+router.post('/:vaId/add', authMiddleware, checkVARole(['owner', 'admin']), (req, res, next) => {
+  // Choose middleware based on file type
+  const fileType = req.body.fileType || 'document';
+  if (fileType === 'livery') {
+    return uploadLiveryMiddleware(req, res, next);
+  } else {
+    return uploadDocumentMiddleware(req, res, next);
+  }
+}, async (req, res) => {
   try {
     const { vaId } = req.params;
     const { title, description, fileType, aircraftId, externalUrl, isExternalUrl } = req.body;
@@ -87,7 +63,7 @@ router.post('/:vaId/add', authMiddleware, checkVARole(['owner', 'admin']), uploa
       if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
       }
-      fileUrl = `/uploads/${req.file.filename}`;
+      fileUrl = req.file.path; // URL from Hostinger FTP
       fileName = req.file.originalname;
       fileSize = req.file.size;
       isExternal = false;
@@ -112,7 +88,7 @@ router.post('/:vaId/add', authMiddleware, checkVARole(['owner', 'admin']), uploa
 });
 
 // Legacy endpoint for backward compatibility
-router.post('/:vaId/upload', authMiddleware, checkVARole(['owner', 'admin']), upload.single('file'), async (req, res) => {
+router.post('/:vaId/upload', authMiddleware, checkVARole(['owner', 'admin']), uploadDocumentMiddleware, async (req, res) => {
   try {
     const { vaId } = req.params;
     const { title, description, fileType, aircraftId } = req.body;
@@ -122,7 +98,7 @@ router.post('/:vaId/upload', authMiddleware, checkVARole(['owner', 'admin']), up
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
+    const fileUrl = req.file.path; // URL from Hostinger FTP
 
     const [result] = await db.query(
       `INSERT INTO downloads (va_id, title, description, file_type, file_name, file_url, file_size, is_external_url, aircraft_id, uploaded_by)

@@ -1,37 +1,9 @@
 const express = require('express');
 const db = require('../config/database');
 const { authMiddleware, checkVARole } = require('../middleware/auth');
-const multer = require('multer');
-const path = require('path');
+const { uploadLogoMiddleware } = require('../middleware/upload');
 
 const router = express.Router();
-
-// Configure multer for logo uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'public/uploads/logos/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'va-logo-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
-  fileFilter: function (req, file, cb) {
-    const allowedTypes = /jpeg|jpg|png|gif|svg|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'));
-    }
-  }
-});
 
 // Get all Virtual Airlines
 router.get('/', async (req, res) => {
@@ -57,7 +29,7 @@ router.get('/', async (req, res) => {
 });
 
 // Create Virtual Airline
-router.post('/', authMiddleware, upload.single('logo'), async (req, res) => {
+router.post('/', authMiddleware, uploadLogoMiddleware, async (req, res) => {
   try {
     const { 
       name, 
@@ -97,10 +69,10 @@ router.post('/', authMiddleware, upload.single('logo'), async (req, res) => {
       return res.status(400).json({ error: 'Callsign already taken' });
     }
 
-    // Determine logo URL (uploaded file or external URL)
+    // Determine logo URL (Hostinger FTP URL or external URL)
     let finalLogoUrl = logo_url || null;
     if (req.file) {
-      finalLogoUrl = '/uploads/logos/' + req.file.filename;
+      finalLogoUrl = req.file.path; // URL from Hostinger FTP
     }
 
     // Create VA with branding colors and contact info
@@ -280,7 +252,7 @@ router.get('/:vaId/leaderboard', async (req, res) => {
 });
 
 // Update VA (admin only)
-router.put('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), upload.single('logo'), async (req, res) => {
+router.put('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadLogoMiddleware, async (req, res) => {
   try {
     const { vaId } = req.params;
     const { name, description, website, contact_email, contact_discord, contact_other, logo_url } = req.body;
@@ -296,7 +268,7 @@ router.put('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), upload.sin
     // Only update logo if a new one is provided
     if (req.file) {
       updateFields.push('logo_url = ?');
-      updateValues.push('/uploads/logos/' + req.file.filename);
+      updateValues.push(req.file.path); // URL from Hostinger FTP
     } else if (logo_url) {
       updateFields.push('logo_url = ?');
       updateValues.push(logo_url);
