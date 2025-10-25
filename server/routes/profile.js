@@ -151,7 +151,14 @@ router.get('/:userId', async (req, res) => {
 router.put('/me', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { first_name, last_name, avatar_url } = req.body;
+    
+    // Accepter à la fois camelCase (firstName) et snake_case (first_name)
+    const first_name = req.body.first_name ?? req.body.firstName;
+    const last_name = req.body.last_name ?? req.body.lastName;
+    const avatar_url = req.body.avatar_url ?? req.body.avatarUrl;
+
+    console.log('PUT /api/profile/me - Body received:', req.body);
+    console.log('Parsed values:', { first_name, last_name, avatar_url });
 
     // Construire la requête UPDATE dynamiquement
     const updates = [];
@@ -174,7 +181,11 @@ router.put('/me', authMiddleware, async (req, res) => {
 
     // Si aucune mise à jour
     if (updates.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
+      return res.status(400).json({ 
+        error: 'No fields to update',
+        received: req.body,
+        hint: 'Send firstName, lastName, or avatarUrl'
+      });
     }
 
     values.push(userId);
