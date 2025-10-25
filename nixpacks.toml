@@ -1,0 +1,17 @@
+# Nixpacks configuration for Railway
+# https://nixpacks.com/docs/configuration/file
+
+[phases.setup]
+nixPkgs = ["nodejs-18_x"]
+
+[phases.install]
+cmds = ["npm ci --only=production"]
+
+[phases.build]
+cmds = ["echo 'No build step required for backend API'"]
+
+[start]
+cmd = "npm start"
+
+[variables]
+NODE_ENV = "production"

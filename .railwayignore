@@ -1,0 +1,48 @@
+# Railway Ignore File
+# Fichiers/dossiers à ne pas déployer sur Railway
+
+# Documentation locale
+*.old.md
+CLEANUP_*.md
+HOMEPAGE_*.md
+CONTRIBUTING.md
+TESTING_*.md
+
+# Development
+node_modules/
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Environment
+.env.local
+.env.*.local
+
+# Uploads locaux (seront créés sur Railway)
+public/uploads/**/*
+!public/uploads/.gitkeep
+
+# Database dumps
+*.sql.gz
+backup-*.sql
+
+# Tests
+coverage/
+.nyc_output/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Temporary
+tmp/
+temp/
+*.tmp
