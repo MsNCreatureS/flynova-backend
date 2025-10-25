@@ -5,7 +5,59 @@ const { uploadAvatarMiddleware } = require('../middleware/upload');
 
 const router = express.Router();
 
-// Get user profile
+// Get current user profile (authenticated)
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get user info
+    const [users] = await db.query(
+      'SELECT id, username, email, first_name, last_name, avatar_url, created_at FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[0];
+
+    // Get VA memberships
+    const [memberships] = await db.query(`
+      SELECT 
+        vm.*,
+        va.name as va_name,
+        va.callsign as va_callsign,
+        va.logo_url as va_logo_url,
+        (SELECT COUNT(*) FROM va_members WHERE va_id = vm.va_id AND status = 'active') as member_count
+      FROM va_members vm
+      JOIN virtual_airlines va ON vm.va_id = va.id
+      WHERE vm.user_id = ? AND vm.status = 'active'
+      ORDER BY vm.join_date DESC
+    `, [userId]);
+
+    // Get total stats across all VAs
+    const [stats] = await db.query(`
+      SELECT 
+        SUM(total_flights) as total_flights,
+        SUM(total_hours) as total_hours,
+        SUM(points) as total_points
+      FROM va_members
+      WHERE user_id = ? AND status = 'active'
+    `, [userId]);
+
+    res.json({
+      user,
+      memberships,
+      stats: stats[0]
+    });
+  } catch (error) {
+    console.error('Get current user profile error:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+// Get user profile by ID
 router.get('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
