@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { authenticateToken, requireSuperAdmin } = require('../middleware/auth');
+const { authMiddleware, checkSuperAdmin } = require('../middleware/auth');
 const { uploadBugImageMiddleware } = require('../middleware/upload');
 
 /**
@@ -81,7 +81,7 @@ router.post('/', uploadBugImageMiddleware, async (req, res) => {
  * GET /api/bug-reports
  * Get all bug reports (Super Admin only)
  */
-router.get('/', authenticateToken, requireSuperAdmin, async (req, res) => {
+router.get('/', authMiddleware, checkSuperAdmin, async (req, res) => {
   try {
     const { status } = req.query;
 
@@ -120,7 +120,7 @@ router.get('/', authenticateToken, requireSuperAdmin, async (req, res) => {
  * GET /api/bug-reports/:id
  * Get a specific bug report (Super Admin only)
  */
-router.get('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
+router.get('/:id', authMiddleware, checkSuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -154,7 +154,7 @@ router.get('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
  * PATCH /api/bug-reports/:id
  * Update bug report status or add admin notes (Super Admin only)
  */
-router.patch('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
+router.patch('/:id', authMiddleware, checkSuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, admin_notes } = req.body;
@@ -221,7 +221,7 @@ router.patch('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
  * DELETE /api/bug-reports/:id
  * Delete a bug report (Super Admin only)
  */
-router.delete('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
+router.delete('/:id', authMiddleware, checkSuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
