@@ -41,7 +41,7 @@ router.post('/', uploadBugImageMiddleware, async (req, res) => {
     }
 
     // Get image URL if uploaded
-    const imageUrl = req.file ? req.file.publicUrl || req.file.path : null;
+    const imageUrl = req.file ? (req.file.publicUrl || req.file.path || null) : null;
 
     // Insert bug report
     const query = `
@@ -50,7 +50,7 @@ router.post('/', uploadBugImageMiddleware, async (req, res) => {
     `;
 
     const [result] = await db.execute(query, [
-      userId,
+      userId || null,
       username,
       title,
       description,
