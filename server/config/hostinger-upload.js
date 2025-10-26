@@ -106,6 +106,12 @@ const uploadDocument = multer({
   limits: { fileSize: 20 * 1024 * 1024 } // 20MB
 });
 
+const uploadBugImage = multer({ 
+  storage, 
+  fileFilter: imageFilter,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
+
 /**
  * Upload un fichier vers Hostinger via FTP
  * @param {string} localFilePath - Chemin local du fichier
@@ -131,7 +137,7 @@ async function uploadToHostinger(localFilePath, subfolder) {
     await ftpDeploy.deploy(config);
 
     // Construire l'URL publique
-    const baseUrl = process.env.UPLOADS_BASE_URL || 'https://yourdomain.com/uploads';
+    const baseUrl = process.env.UPLOADS_BASE_URL || 'https://darkblue-baboon-659394.hostingersite.com/uploads';
     const publicUrl = `${baseUrl}/${subfolder}/${filename}`;
 
     console.log(`✅ File uploaded: ${publicUrl}`);
@@ -158,7 +164,7 @@ async function uploadToHostinger(localFilePath, subfolder) {
  * @returns {string} URL publique
  */
 function getPublicUrl(subfolder, filename) {
-  const baseUrl = process.env.UPLOADS_BASE_URL || 'https://yourdomain.com/uploads';
+  const baseUrl = process.env.UPLOADS_BASE_URL || 'https://darkblue-baboon-659394.hostingersite.com/uploads';
   return `${baseUrl}/${subfolder}/${filename}`;
 }
 
@@ -168,6 +174,7 @@ module.exports = {
   uploadLivery,
   uploadEvent,
   uploadDocument,
+  uploadBugImage,
   uploadToHostinger,
   getPublicUrl,
 };

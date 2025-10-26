@@ -1,4 +1,4 @@
-const { uploadAvatar, uploadLogo, uploadLivery, uploadEvent, uploadDocument, uploadToHostinger } = require('../config/hostinger-upload');
+const { uploadAvatar, uploadLogo, uploadLivery, uploadEvent, uploadDocument, uploadBugImage, uploadToHostinger } = require('../config/hostinger-upload');
 
 // Middleware pour gérer les erreurs d'upload
 const handleUploadError = (err, req, res, next) => {
@@ -113,10 +113,29 @@ const uploadDocumentMiddleware = (req, res, next) => {
   });
 };
 
+// Middleware pour upload image de bug report
+const uploadBugImageMiddleware = (req, res, next) => {
+  uploadBugImage.single('image')(req, res, async (err) => {
+    if (err) return handleUploadError(err, req, res, next);
+    
+    if (req.file) {
+      try {
+        const publicUrl = await uploadToHostinger(req.file.path, 'bugs');
+        req.file.publicUrl = publicUrl;
+        req.file.path = publicUrl;
+      } catch (uploadError) {
+        return handleUploadError(uploadError, req, res, next);
+      }
+    }
+    next();
+  });
+};
+
 module.exports = {
   uploadAvatarMiddleware,
   uploadLogoMiddleware,
   uploadLiveryMiddleware,
   uploadEventMiddleware,
   uploadDocumentMiddleware,
+  uploadBugImageMiddleware,
 };
