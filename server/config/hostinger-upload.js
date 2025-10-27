@@ -32,6 +32,8 @@ const storage = multer.diskStorage({
       uploadDir = path.join(uploadDir, 'events');
     } else if (file.fieldname === 'document') {
       uploadDir = path.join(uploadDir, 'documents');
+    } else if (file.fieldname === 'audio') {
+      uploadDir = path.join(uploadDir, 'announcements');
     }
 
     // Créer le dossier s'il n'existe pas
@@ -75,6 +77,18 @@ const documentFilter = (req, file, cb) => {
   }
 };
 
+const audioFilter = (req, file, cb) => {
+  const allowedTypes = /mp3|wav|ogg|m4a/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = /audio/.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error('Only audio files are allowed (mp3, wav, ogg, m4a)'));
+  }
+};
+
 // Multer instances
 const uploadAvatar = multer({ 
   storage, 
@@ -110,6 +124,12 @@ const uploadBugImage = multer({
   storage, 
   fileFilter: imageFilter,
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
+
+const uploadCabinAnnouncement = multer({ 
+  storage, 
+  fileFilter: audioFilter,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
 /**
@@ -175,6 +195,7 @@ module.exports = {
   uploadEvent,
   uploadDocument,
   uploadBugImage,
+  uploadCabinAnnouncement,
   uploadToHostinger,
   getPublicUrl,
 };

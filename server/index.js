@@ -19,6 +19,7 @@ const simbriefRoutes = require('./routes/simbrief');
 const acarsRoutes = require('./routes/acars');
 const superAdminRoutes = require('./routes/superadmin');
 const bugReportsRoutes = require('./routes/bugReports');
+const cabinAnnouncementsRoutes = require('./routes/cabinAnnouncements');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -73,6 +74,7 @@ app.use('/api/simbrief', simbriefRoutes);
 app.use('/api/acars', acarsRoutes);
 app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/bug-reports', bugReportsRoutes);
+app.use('/api/cabin-announcements', cabinAnnouncementsRoutes);
 
 // API Root - Liste des endpoints disponibles
 app.get('/api', (req, res) => {
