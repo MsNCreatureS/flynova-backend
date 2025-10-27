@@ -424,6 +424,86 @@ router.post('/flight-reports', authMiddleware, async (req, res) => {
   }
 });
 
+// ============================================
+// CABIN ANNOUNCEMENTS ROUTES FOR ACARS
+// ============================================
+
+/**
+ * GET /api/acars/va/:vaId/cabin-announcements
+ * Get all cabin announcements for a virtual airline
+ */
+router.get('/va/:vaId/cabin-announcements', authMiddleware, async (req, res) => {
+  const { vaId } = req.params;
+
+  try {
+    // Query database for all announcements
+    const [announcements] = await db.query(`
+      SELECT 
+        id,
+        va_id,
+        title,
+        description,
+        audio_url,
+        announcement_type,
+        duration,
+        file_size,
+        uploaded_by,
+        created_at,
+        updated_at
+      FROM va_cabin_announcements
+      WHERE va_id = ?
+      ORDER BY announcement_type, created_at
+    `, [vaId]);
+
+    res.json({
+      success: true,
+      announcements: announcements
+    });
+
+  } catch (error) {
+    console.error('Error fetching cabin announcements:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch cabin announcements',
+      message: error.message 
+    });
+  }
+});
+
+/**
+ * GET /api/acars/va/:vaId/cabin-announcements/:id
+ * Get single cabin announcement
+ */
+router.get('/va/:vaId/cabin-announcements/:id', authMiddleware, async (req, res) => {
+  const { vaId, id } = req.params;
+
+  try {
+    const [announcements] = await db.query(`
+      SELECT * FROM va_cabin_announcements
+      WHERE va_id = ? AND id = ?
+    `, [vaId, id]);
+
+    if (announcements.length === 0) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Announcement not found' 
+      });
+    }
+
+    res.json({
+      success: true,
+      announcement: announcements[0]
+    });
+
+  } catch (error) {
+    console.error('Error fetching announcement:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch announcement' 
+    });
+  }
+});
+
 /**
  * GET /api/acars/test
  * Test endpoint to verify ACARS routes are working
