@@ -34,6 +34,10 @@ const storage = multer.diskStorage({
       uploadDir = path.join(uploadDir, 'documents');
     } else if (file.fieldname === 'audio') {
       uploadDir = path.join(uploadDir, 'announcements');
+    } else if (file.fieldname === 'banner_image') {
+      uploadDir = path.join(uploadDir, 'tours/banners');
+    } else if (file.fieldname === 'award_image') {
+      uploadDir = path.join(uploadDir, 'tours/awards');
     }
 
     // Créer le dossier s'il n'existe pas
@@ -132,6 +136,15 @@ const uploadCabinAnnouncement = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
+const uploadTour = multer({ 
+  storage, 
+  fileFilter: imageFilter,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+}).fields([
+  { name: 'banner_image', maxCount: 1 },
+  { name: 'award_image', maxCount: 1 }
+]);
+
 /**
  * Upload un fichier vers Hostinger via FTP
  * @param {string} localFilePath - Chemin local du fichier
@@ -196,6 +209,7 @@ module.exports = {
   uploadDocument,
   uploadBugImage,
   uploadCabinAnnouncement,
+  uploadTour,
   uploadToHostinger,
   getPublicUrl,
 };

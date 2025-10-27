@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../config/database');
 const { authMiddleware, checkVARole } = require('../middleware/auth');
-const { uploadEventMiddleware } = require('../middleware/upload'); // For banner images
+const { uploadTour, uploadToHostinger } = require('../config/hostinger-upload');
 
 const router = express.Router();
 
@@ -88,7 +88,7 @@ router.get('/:vaId/:tourId', authMiddleware, async (req, res) => {
  * POST /api/tours/:vaId
  * Create a new tour (Admin/Owner only)
  */
-router.post('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadEventMiddleware, async (req, res) => {
+router.post('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadTour, async (req, res) => {
   try {
     const { vaId } = req.params;
     const {
@@ -96,30 +96,38 @@ router.post('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadEve
       description,
       award_title,
       award_description,
-      award_badge,
       status,
       start_date,
       end_date,
-      banner_image_url
+      banner_image_url,
+      award_image_url
     } = req.body;
     const userId = req.user.id;
 
     // Handle banner image (either uploaded file or URL)
     let bannerImage = banner_image_url || null;
-    if (req.file) {
-      bannerImage = req.file.path; // URL from Hostinger FTP
+    if (req.files && req.files.banner_image && req.files.banner_image[0]) {
+      const file = req.files.banner_image[0];
+      bannerImage = await uploadToHostinger(file.path, 'tours/banners');
+    }
+
+    // Handle award image (either uploaded file or URL)
+    let awardImage = award_image_url || null;
+    if (req.files && req.files.award_image && req.files.award_image[0]) {
+      const file = req.files.award_image[0];
+      awardImage = await uploadToHostinger(file.path, 'tours/awards');
     }
 
     const [result] = await db.query(`
       INSERT INTO va_tours 
-      (va_id, title, description, banner_image, award_badge, award_title, award_description, status, start_date, end_date, created_by)
+      (va_id, title, description, banner_image, award_image, award_title, award_description, status, start_date, end_date, created_by)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       vaId,
       title,
       description,
       bannerImage,
-      award_badge || null,
+      awardImage,
       award_title || null,
       award_description || null,
       status || 'draft',
@@ -142,7 +150,7 @@ router.post('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadEve
  * PUT /api/tours/:vaId/:tourId
  * Update a tour (Admin/Owner only)
  */
-router.put('/:vaId/:tourId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadEventMiddleware, async (req, res) => {
+router.put('/:vaId/:tourId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadTour, async (req, res) => {
   try {
     const { vaId, tourId } = req.params;
     const {
@@ -150,11 +158,11 @@ router.put('/:vaId/:tourId', authMiddleware, checkVARole(['Owner', 'Admin']), up
       description,
       award_title,
       award_description,
-      award_badge,
       status,
       start_date,
       end_date,
-      banner_image_url
+      banner_image_url,
+      award_image_url
     } = req.body;
 
     // Build update query dynamically
@@ -177,10 +185,6 @@ router.put('/:vaId/:tourId', authMiddleware, checkVARole(['Owner', 'Admin']), up
       updateFields.push('award_description = ?');
       updateValues.push(award_description);
     }
-    if (award_badge !== undefined) {
-      updateFields.push('award_badge = ?');
-      updateValues.push(award_badge);
-    }
     if (status) {
       updateFields.push('status = ?');
       updateValues.push(status);
@@ -195,12 +199,25 @@ router.put('/:vaId/:tourId', authMiddleware, checkVARole(['Owner', 'Admin']), up
     }
 
     // Handle banner image update
-    if (req.file) {
+    if (req.files && req.files.banner_image && req.files.banner_image[0]) {
+      const file = req.files.banner_image[0];
+      const bannerUrl = await uploadToHostinger(file.path, 'tours/banners');
       updateFields.push('banner_image = ?');
-      updateValues.push(req.file.path);
+      updateValues.push(bannerUrl);
     } else if (banner_image_url !== undefined) {
       updateFields.push('banner_image = ?');
       updateValues.push(banner_image_url);
+    }
+
+    // Handle award image update
+    if (req.files && req.files.award_image && req.files.award_image[0]) {
+      const file = req.files.award_image[0];
+      const awardUrl = await uploadToHostinger(file.path, 'tours/awards');
+      updateFields.push('award_image = ?');
+      updateValues.push(awardUrl);
+    } else if (award_image_url !== undefined) {
+      updateFields.push('award_image = ?');
+      updateValues.push(award_image_url);
     }
 
     if (updateFields.length === 0) {
