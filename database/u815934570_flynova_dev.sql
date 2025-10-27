@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3306
--- Généré le : sam. 25 oct. 2025 à 18:23
+-- Généré le : lun. 27 oct. 2025 à 14:32
 -- Version du serveur : 11.8.3-MariaDB-log
 -- Version de PHP : 7.2.34
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Base de données : `u815934570_flynovavas`
+-- Base de données : `u815934570_flynova_dev`
 --
 
 -- --------------------------------------------------------
@@ -69,6 +69,25 @@ CREATE TABLE `airports` (
   `timezone_offset` decimal(4,2) DEFAULT NULL,
   `dst` varchar(1) DEFAULT NULL,
   `timezone` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `bug_reports`
+--
+
+CREATE TABLE `bug_reports` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL COMMENT 'User who submitted the bug (NULL for non-logged users)',
+  `username` varchar(100) NOT NULL COMMENT 'Username or name of person reporting',
+  `title` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `image_url` varchar(500) DEFAULT NULL COMMENT 'Screenshot or image URL',
+  `status` enum('pending','in_progress','resolved','closed') DEFAULT 'pending',
+  `admin_notes` text DEFAULT NULL COMMENT 'Notes from admin reviewing the bug',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -215,6 +234,33 @@ CREATE TABLE `user_achievements` (
 -- --------------------------------------------------------
 
 --
+-- Structure de la table `va_cabin_announcements`
+--
+
+CREATE TABLE `va_cabin_announcements` (
+  `id` int(11) NOT NULL,
+  `va_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `audio_url` varchar(500) NOT NULL,
+  `announcement_type` enum('boarding','safety','takeoff','cruise','descent','landing','arrival','custom') DEFAULT 'custom',
+  `duration` int(11) DEFAULT 0 COMMENT 'Duration in seconds',
+  `file_size` int(11) DEFAULT 0 COMMENT 'File size in bytes',
+  `uploaded_by` int(11) NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `va_cabin_announcements`
+--
+
+INSERT INTO `va_cabin_announcements` (`id`, `va_id`, `title`, `description`, `audio_url`, `announcement_type`, `duration`, `file_size`, `uploaded_by`, `created_at`, `updated_at`) VALUES
+(1, 1, 'Safety AFR', 'Blabla', 'https://darkblue-baboon-659394.hostingersite.com/uploads//announcements/New-safety-instructions--Air-France-1761575423879-943344090.mp3', 'safety', 329, 7905835, 1, '2025-10-27 14:30:59', '2025-10-27 14:30:59');
+
+-- --------------------------------------------------------
+
+--
 -- Structure de la table `va_fleet`
 --
 
@@ -328,6 +374,16 @@ ALTER TABLE `airports`
   ADD KEY `idx_country` (`country`);
 
 --
+-- Index pour la table `bug_reports`
+--
+ALTER TABLE `bug_reports`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_user` (`user_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_created` (`created_at`),
+  ADD KEY `idx_status_created` (`status`,`created_at` DESC);
+
+--
 -- Index pour la table `downloads`
 --
 ALTER TABLE `downloads`
@@ -406,6 +462,15 @@ ALTER TABLE `user_achievements`
   ADD KEY `idx_user` (`user_id`);
 
 --
+-- Index pour la table `va_cabin_announcements`
+--
+ALTER TABLE `va_cabin_announcements`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `uploaded_by` (`uploaded_by`),
+  ADD KEY `idx_va_id` (`va_id`),
+  ADD KEY `idx_announcement_type` (`announcement_type`);
+
+--
 -- Index pour la table `va_fleet`
 --
 ALTER TABLE `va_fleet`
@@ -471,6 +536,12 @@ ALTER TABLE `airports`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT pour la table `bug_reports`
+--
+ALTER TABLE `bug_reports`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT pour la table `downloads`
 --
 ALTER TABLE `downloads`
@@ -513,6 +584,12 @@ ALTER TABLE `user_achievements`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT pour la table `va_cabin_announcements`
+--
+ALTER TABLE `va_cabin_announcements`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT pour la table `va_fleet`
 --
 ALTER TABLE `va_fleet`
@@ -539,6 +616,12 @@ ALTER TABLE `virtual_airlines`
 --
 -- Contraintes pour les tables déchargées
 --
+
+--
+-- Contraintes pour la table `bug_reports`
+--
+ALTER TABLE `bug_reports`
+  ADD CONSTRAINT `bug_reports_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Contraintes pour la table `downloads`
@@ -585,6 +668,13 @@ ALTER TABLE `user_achievements`
   ADD CONSTRAINT `user_achievements_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `user_achievements_ibfk_2` FOREIGN KEY (`achievement_id`) REFERENCES `achievements` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `user_achievements_ibfk_3` FOREIGN KEY (`va_id`) REFERENCES `virtual_airlines` (`id`) ON DELETE CASCADE;
+
+--
+-- Contraintes pour la table `va_cabin_announcements`
+--
+ALTER TABLE `va_cabin_announcements`
+  ADD CONSTRAINT `va_cabin_announcements_ibfk_1` FOREIGN KEY (`va_id`) REFERENCES `virtual_airlines` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `va_cabin_announcements_ibfk_2` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Contraintes pour la table `va_fleet`
