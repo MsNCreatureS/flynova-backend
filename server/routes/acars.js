@@ -151,6 +151,7 @@ router.get('/flights/active/:userId', authMiddleware, async (req, res) => {
         aircraft_type: flight.aircraft_type
       },
       va: {
+        id: flight.va_id,
         name: flight.va_name,
         callsign: flight.callsign,
         logo_url: flight.logo_url,
