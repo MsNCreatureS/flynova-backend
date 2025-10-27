@@ -433,7 +433,7 @@ router.post('/flight-reports', authMiddleware, async (req, res) => {
  * GET /api/acars/va/:vaId/cabin-announcements
  * Get all cabin announcements for a virtual airline
  */
-router.get('/va/:vaId/cabin-announcements', authMiddleware, async (req, res) => {
+router.get('/va/:vaId/cabin-announcements', async (req, res) => {
   const { vaId } = req.params;
 
   try {
@@ -475,7 +475,7 @@ router.get('/va/:vaId/cabin-announcements', authMiddleware, async (req, res) => 
  * GET /api/acars/va/:vaId/cabin-announcements/:id
  * Get single cabin announcement
  */
-router.get('/va/:vaId/cabin-announcements/:id', authMiddleware, async (req, res) => {
+router.get('/va/:vaId/cabin-announcements/:id', async (req, res) => {
   const { vaId, id } = req.params;
 
   try {
