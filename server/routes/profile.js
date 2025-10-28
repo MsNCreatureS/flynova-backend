@@ -156,9 +156,10 @@ router.put('/me', authMiddleware, async (req, res) => {
     const first_name = req.body.first_name ?? req.body.firstName;
     const last_name = req.body.last_name ?? req.body.lastName;
     const avatar_url = req.body.avatar_url ?? req.body.avatarUrl;
+    const simbrief_username = req.body.simbrief_username ?? req.body.simbriefUsername;
 
     console.log('PUT /api/profile/me - Body received:', req.body);
-    console.log('Parsed values:', { first_name, last_name, avatar_url });
+    console.log('Parsed values:', { first_name, last_name, avatar_url, simbrief_username });
 
     // Construire la requête UPDATE dynamiquement
     const updates = [];
@@ -179,12 +180,17 @@ router.put('/me', authMiddleware, async (req, res) => {
       values.push(avatar_url || null);
     }
 
+    if (simbrief_username !== undefined) {
+      updates.push('simbrief_username = ?');
+      values.push(simbrief_username || null);
+    }
+
     // Si aucune mise à jour
     if (updates.length === 0) {
       return res.status(400).json({ 
         error: 'No fields to update',
         received: req.body,
-        hint: 'Send firstName, lastName, or avatarUrl'
+        hint: 'Send firstName, lastName, avatarUrl, or simbriefUsername'
       });
     }
 
@@ -197,7 +203,7 @@ router.put('/me', authMiddleware, async (req, res) => {
 
     // Get updated user data
     const [users] = await db.query(
-      'SELECT id, username, email, first_name, last_name, avatar_url FROM users WHERE id = ?',
+      'SELECT id, username, email, first_name, last_name, avatar_url, simbrief_username FROM users WHERE id = ?',
       [userId]
     );
 

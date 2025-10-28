@@ -9,6 +9,19 @@ const router = express.Router();
 router.get('/:vaId', async (req, res) => {
   try {
     const { vaId } = req.params;
+    const now = new Date().toISOString();
+
+    // Auto-update event statuses based on dates
+    await db.query(`
+      UPDATE events 
+      SET status = CASE
+        WHEN end_date < ? AND status != 'cancelled' THEN 'completed'
+        WHEN start_date <= ? AND end_date >= ? AND status != 'cancelled' THEN 'active'
+        WHEN start_date > ? AND status != 'cancelled' THEN 'upcoming'
+        ELSE status
+      END
+      WHERE va_id = ?
+    `, [now, now, now, now, vaId]);
 
     const [events] = await db.query(`
       SELECT e.*, a.icao_code as focus_airport_icao
