@@ -79,15 +79,24 @@ const uploadLiveryMiddleware = (req, res, next) => {
 
 // Middleware pour upload image événement
 const uploadEventMiddleware = (req, res, next) => {
-  uploadEvent.single('image')(req, res, async (err) => {
-    if (err) return handleUploadError(err, req, res, next);
+  console.log('uploadEventMiddleware called');
+  uploadEvent.single('cover_image')(req, res, async (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      return handleUploadError(err, req, res, next);
+    }
+    
+    console.log('File after multer:', req.file);
     
     if (req.file) {
       try {
+        console.log('Starting FTP upload for event:', req.file.path);
         const publicUrl = await uploadToHostinger(req.file.path, 'events');
+        console.log('FTP upload success:', publicUrl);
         req.file.publicUrl = publicUrl;
         req.file.path = publicUrl;
       } catch (uploadError) {
+        console.error('FTP upload error for event:', uploadError);
         return handleUploadError(uploadError, req, res, next);
       }
     }

@@ -85,10 +85,19 @@ router.post('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadEve
     const userId = req.user.id;
     const { name, description, event_type, start_date, end_date, bonus_points, cover_image_url } = req.body;
 
+    console.log('Creating event for VA:', vaId);
+    console.log('Event data:', { name, event_type, start_date, end_date });
+    console.log('File uploaded:', req.file ? 'Yes' : 'No');
+    console.log('File details:', req.file);
+    console.log('External URL:', cover_image_url);
+
     // Determine cover image URL (Hostinger FTP URL or external URL)
     let finalCoverImage = cover_image_url || null;
     if (req.file) {
       finalCoverImage = req.file.path; // URL from Hostinger FTP
+      console.log('Using uploaded file URL:', finalCoverImage);
+    } else if (cover_image_url) {
+      console.log('Using external URL:', cover_image_url);
     }
 
     const [result] = await db.query(
@@ -96,13 +105,15 @@ router.post('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadEve
       [vaId, name, description || null, event_type, finalCoverImage, start_date, end_date, bonus_points || 0, userId]
     );
 
+    console.log('Event created successfully with ID:', result.insertId);
+
     res.status(201).json({
       message: 'Event created successfully',
       eventId: result.insertId
     });
   } catch (error) {
     console.error('Create event error:', error);
-    res.status(500).json({ error: 'Failed to create event' });
+    res.status(500).json({ error: 'Failed to create event', details: error.message });
   }
 });
 
