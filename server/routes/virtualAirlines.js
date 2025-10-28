@@ -138,6 +138,7 @@ router.get('/:vaId', async (req, res) => {
         COALESCE(va.secondary_color, '#00a843') as secondary_color,
         COALESCE(va.accent_color, '#00ff7f') as accent_color,
         COALESCE(va.text_on_primary, '#ffffff') as text_on_primary,
+        COALESCE(va.background_color, '#f8fafc') as background_color,
         u.username as owner_username,
         COUNT(DISTINCT vm.user_id) as member_count,
         COUNT(DISTINCT f.id) as total_flights,
@@ -269,7 +270,8 @@ router.put('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadLogo
       primary_color,
       secondary_color,
       accent_color,
-      text_on_primary
+      text_on_primary,
+      background_color
     } = req.body;
 
     // Build update query dynamically based on what's provided
@@ -330,6 +332,10 @@ router.put('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadLogo
     if (text_on_primary !== undefined) {
       updateFields.push('text_on_primary = ?');
       updateValues.push(text_on_primary);
+    }
+    if (background_color !== undefined) {
+      updateFields.push('background_color = ?');
+      updateValues.push(background_color);
     }
 
     // Only update logo if a new one is provided
