@@ -140,6 +140,11 @@ router.get('/:vaId', async (req, res) => {
         COALESCE(va.text_on_primary, '#ffffff') as text_on_primary,
         COALESCE(va.background_color, '#f8fafc') as background_color,
         COALESCE(va.navbar_color, '#1e293b') as navbar_color,
+        COALESCE(va.card_background_color, '#ffffff') as card_background_color,
+        COALESCE(va.navbar_title_color, '#1e293b') as navbar_title_color,
+        COALESCE(va.heading_color, '#0f172a') as heading_color,
+        COALESCE(va.subheading_color, '#334155') as subheading_color,
+        COALESCE(va.text_color, '#475569') as text_color,
         u.username as owner_username,
         COUNT(DISTINCT vm.user_id) as member_count,
         COUNT(DISTINCT f.id) as total_flights,
@@ -273,7 +278,12 @@ router.put('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadLogo
       accent_color,
       text_on_primary,
       background_color,
-      navbar_color
+      navbar_color,
+      card_background_color,
+      navbar_title_color,
+      heading_color,
+      subheading_color,
+      text_color
     } = req.body;
 
     // Build update query dynamically based on what's provided
@@ -342,6 +352,26 @@ router.put('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadLogo
     if (navbar_color !== undefined) {
       updateFields.push('navbar_color = ?');
       updateValues.push(navbar_color);
+    }
+    if (card_background_color !== undefined) {
+      updateFields.push('card_background_color = ?');
+      updateValues.push(card_background_color);
+    }
+    if (navbar_title_color !== undefined) {
+      updateFields.push('navbar_title_color = ?');
+      updateValues.push(navbar_title_color);
+    }
+    if (heading_color !== undefined) {
+      updateFields.push('heading_color = ?');
+      updateValues.push(heading_color);
+    }
+    if (subheading_color !== undefined) {
+      updateFields.push('subheading_color = ?');
+      updateValues.push(subheading_color);
+    }
+    if (text_color !== undefined) {
+      updateFields.push('text_color = ?');
+      updateValues.push(text_color);
     }
 
     // Only update logo if a new one is provided
