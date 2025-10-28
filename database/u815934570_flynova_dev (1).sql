@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3306
--- Généré le : lun. 27 oct. 2025 à 14:32
+-- Généré le : mar. 28 oct. 2025 à 00:26
 -- Version du serveur : 11.8.3-MariaDB-log
 -- Version de PHP : 7.2.34
 
@@ -251,13 +251,6 @@ CREATE TABLE `va_cabin_announcements` (
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Déchargement des données de la table `va_cabin_announcements`
---
-
-INSERT INTO `va_cabin_announcements` (`id`, `va_id`, `title`, `description`, `audio_url`, `announcement_type`, `duration`, `file_size`, `uploaded_by`, `created_at`, `updated_at`) VALUES
-(1, 1, 'Safety AFR', 'Blabla', 'https://darkblue-baboon-659394.hostingersite.com/uploads//announcements/New-safety-instructions--Air-France-1761575423879-943344090.mp3', 'safety', 329, 7905835, 1, '2025-10-27 14:30:59', '2025-10-27 14:30:59');
-
 -- --------------------------------------------------------
 
 --
@@ -314,6 +307,85 @@ CREATE TABLE `va_routes` (
   `aircraft_type` varchar(50) DEFAULT NULL,
   `status` enum('active','inactive','seasonal') DEFAULT 'active',
   `created_at` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `va_tours`
+--
+
+CREATE TABLE `va_tours` (
+  `id` int(11) NOT NULL,
+  `va_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `banner_image` varchar(500) DEFAULT NULL COMMENT 'Banner image URL uploaded to FTP or external URL',
+  `award_image` varchar(500) DEFAULT NULL COMMENT 'Award badge image URL uploaded to FTP or external URL',
+  `award_title` varchar(255) DEFAULT NULL COMMENT 'Title of the award given upon completion',
+  `award_description` text DEFAULT NULL COMMENT 'Description of the award',
+  `status` enum('draft','active','completed','cancelled') DEFAULT 'draft',
+  `start_date` timestamp NULL DEFAULT NULL,
+  `end_date` timestamp NULL DEFAULT NULL,
+  `created_by` int(11) NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `va_tour_awards`
+--
+
+CREATE TABLE `va_tour_awards` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `tour_id` int(11) NOT NULL,
+  `va_id` int(11) NOT NULL,
+  `award_title` varchar(255) NOT NULL,
+  `award_description` text DEFAULT NULL,
+  `award_image` varchar(500) DEFAULT NULL COMMENT 'Award badge image URL',
+  `earned_at` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `va_tour_legs`
+--
+
+CREATE TABLE `va_tour_legs` (
+  `id` int(11) NOT NULL,
+  `tour_id` int(11) NOT NULL,
+  `leg_number` int(11) NOT NULL COMMENT 'Order of this leg in the tour (1, 2, 3...)',
+  `departure_icao` varchar(4) NOT NULL,
+  `departure_name` varchar(255) DEFAULT NULL,
+  `arrival_icao` varchar(4) NOT NULL,
+  `arrival_name` varchar(255) DEFAULT NULL,
+  `required_aircraft` varchar(100) DEFAULT NULL COMMENT 'Optional: specific aircraft type required',
+  `min_flight_time` int(11) DEFAULT NULL COMMENT 'Minimum flight time in minutes',
+  `notes` text DEFAULT NULL COMMENT 'Special notes or requirements for this leg',
+  `created_at` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `va_tour_progress`
+--
+
+CREATE TABLE `va_tour_progress` (
+  `id` int(11) NOT NULL,
+  `tour_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `va_id` int(11) NOT NULL,
+  `current_leg` int(11) DEFAULT 1 COMMENT 'Current leg number the pilot is on',
+  `completed_legs` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Array of completed leg IDs with timestamps' CHECK (json_valid(`completed_legs`)),
+  `status` enum('not_started','in_progress','completed','abandoned') DEFAULT 'not_started',
+  `started_at` timestamp NULL DEFAULT NULL,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `award_claimed` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -502,6 +574,47 @@ ALTER TABLE `va_routes`
   ADD KEY `idx_arrival_icao` (`arrival_icao`);
 
 --
+-- Index pour la table `va_tours`
+--
+ALTER TABLE `va_tours`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `created_by` (`created_by`),
+  ADD KEY `idx_va_id` (`va_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_dates` (`start_date`,`end_date`);
+
+--
+-- Index pour la table `va_tour_awards`
+--
+ALTER TABLE `va_tour_awards`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_tour_award` (`user_id`,`tour_id`),
+  ADD KEY `va_id` (`va_id`),
+  ADD KEY `idx_user` (`user_id`),
+  ADD KEY `idx_tour` (`tour_id`),
+  ADD KEY `idx_earned` (`earned_at` DESC);
+
+--
+-- Index pour la table `va_tour_legs`
+--
+ALTER TABLE `va_tour_legs`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_leg` (`tour_id`,`leg_number`),
+  ADD KEY `idx_tour_id` (`tour_id`),
+  ADD KEY `idx_leg_number` (`tour_id`,`leg_number`);
+
+--
+-- Index pour la table `va_tour_progress`
+--
+ALTER TABLE `va_tour_progress`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_tour` (`tour_id`,`user_id`),
+  ADD KEY `va_id` (`va_id`),
+  ADD KEY `idx_tour_user` (`tour_id`,`user_id`),
+  ADD KEY `idx_user_va` (`user_id`,`va_id`),
+  ADD KEY `idx_status` (`status`);
+
+--
 -- Index pour la table `virtual_airlines`
 --
 ALTER TABLE `virtual_airlines`
@@ -587,7 +700,7 @@ ALTER TABLE `user_achievements`
 -- AUTO_INCREMENT pour la table `va_cabin_announcements`
 --
 ALTER TABLE `va_cabin_announcements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT pour la table `va_fleet`
@@ -605,6 +718,30 @@ ALTER TABLE `va_members`
 -- AUTO_INCREMENT pour la table `va_routes`
 --
 ALTER TABLE `va_routes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pour la table `va_tours`
+--
+ALTER TABLE `va_tours`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pour la table `va_tour_awards`
+--
+ALTER TABLE `va_tour_awards`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pour la table `va_tour_legs`
+--
+ALTER TABLE `va_tour_legs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pour la table `va_tour_progress`
+--
+ALTER TABLE `va_tour_progress`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -694,6 +831,35 @@ ALTER TABLE `va_members`
 --
 ALTER TABLE `va_routes`
   ADD CONSTRAINT `va_routes_ibfk_1` FOREIGN KEY (`va_id`) REFERENCES `virtual_airlines` (`id`) ON DELETE CASCADE;
+
+--
+-- Contraintes pour la table `va_tours`
+--
+ALTER TABLE `va_tours`
+  ADD CONSTRAINT `va_tours_ibfk_1` FOREIGN KEY (`va_id`) REFERENCES `virtual_airlines` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `va_tours_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Contraintes pour la table `va_tour_awards`
+--
+ALTER TABLE `va_tour_awards`
+  ADD CONSTRAINT `va_tour_awards_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `va_tour_awards_ibfk_2` FOREIGN KEY (`tour_id`) REFERENCES `va_tours` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `va_tour_awards_ibfk_3` FOREIGN KEY (`va_id`) REFERENCES `virtual_airlines` (`id`) ON DELETE CASCADE;
+
+--
+-- Contraintes pour la table `va_tour_legs`
+--
+ALTER TABLE `va_tour_legs`
+  ADD CONSTRAINT `va_tour_legs_ibfk_1` FOREIGN KEY (`tour_id`) REFERENCES `va_tours` (`id`) ON DELETE CASCADE;
+
+--
+-- Contraintes pour la table `va_tour_progress`
+--
+ALTER TABLE `va_tour_progress`
+  ADD CONSTRAINT `va_tour_progress_ibfk_1` FOREIGN KEY (`tour_id`) REFERENCES `va_tours` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `va_tour_progress_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `va_tour_progress_ibfk_3` FOREIGN KEY (`va_id`) REFERENCES `virtual_airlines` (`id`) ON DELETE CASCADE;
 
 --
 -- Contraintes pour la table `virtual_airlines`

@@ -10,10 +10,10 @@ const router = express.Router();
 // ============================================
 
 /**
- * GET /api/tours/:vaId
+ * GET /api/tours/va/:vaId
  * Get all tours for a VA
  */
-router.get('/:vaId', authMiddleware, async (req, res) => {
+router.get('/va/:vaId', authMiddleware, async (req, res) => {
   try {
     const { vaId } = req.params;
 
@@ -37,6 +37,51 @@ router.get('/:vaId', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Get tours error:', error);
     res.status(500).json({ error: 'Failed to fetch tours' });
+  }
+});
+
+/**
+ * GET /api/tours/va/:vaId/pilot/active
+ * Get active tours for a pilot with their progress
+ */
+router.get('/va/:vaId/pilot/active', authMiddleware, async (req, res) => {
+  try {
+    const { vaId } = req.params;
+    const userId = req.user.id;
+
+    const [tours] = await db.query(`
+      SELECT 
+        t.*,
+        COUNT(DISTINCT tl.id) as total_legs,
+        tp.id as progress_id,
+        tp.current_leg,
+        tp.status as progress_status,
+        tp.started_at,
+        tp.completed_at,
+        (
+          SELECT COUNT(*) 
+          FROM va_tour_legs tl2 
+          WHERE tl2.tour_id = t.id 
+          AND JSON_CONTAINS(
+            COALESCE(tp.completed_legs, '[]'),
+            CAST(tl2.id AS JSON),
+            '$'
+          )
+        ) as completed_legs
+      FROM va_tours t
+      LEFT JOIN va_tour_legs tl ON t.id = tl.tour_id
+      LEFT JOIN va_tour_progress tp ON t.id = tp.tour_id AND tp.user_id = ?
+      WHERE t.va_id = ? 
+      AND t.status = 'active'
+      AND (tp.id IS NULL OR tp.status IN ('not_started', 'in_progress'))
+      GROUP BY t.id, tp.id
+      ORDER BY tp.started_at DESC, t.created_at DESC
+    `, [userId, vaId]);
+
+    res.json({ tours });
+  } catch (error) {
+    console.error('Get pilot active tours error:', error);
+    res.status(500).json({ error: 'Failed to fetch active tours' });
   }
 });
 
