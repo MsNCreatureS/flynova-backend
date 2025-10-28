@@ -255,23 +255,94 @@ router.get('/:vaId/leaderboard', async (req, res) => {
 router.put('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadLogoMiddleware, async (req, res) => {
   try {
     const { vaId } = req.params;
-    const { name, description, website, contact_email, contact_discord, contact_other, logo_url } = req.body;
+    const { 
+      name, 
+      callsign,
+      icao_code,
+      iata_code,
+      description, 
+      website, 
+      contact_email, 
+      contact_discord, 
+      contact_other, 
+      logo_url,
+      primary_color,
+      secondary_color,
+      accent_color,
+      text_on_primary
+    } = req.body;
 
     // Build update query dynamically based on what's provided
     let updateFields = [];
     let updateValues = [];
 
     // Always update these fields
-    updateFields.push('name = ?', 'description = ?', 'website = ?', 'contact_email = ?', 'contact_discord = ?', 'contact_other = ?');
-    updateValues.push(name, description, website, contact_email, contact_discord, contact_other);
+    if (name !== undefined) {
+      updateFields.push('name = ?');
+      updateValues.push(name);
+    }
+    if (callsign !== undefined) {
+      updateFields.push('callsign = ?');
+      updateValues.push(callsign);
+    }
+    if (icao_code !== undefined) {
+      updateFields.push('icao_code = ?');
+      updateValues.push(icao_code);
+    }
+    if (iata_code !== undefined) {
+      updateFields.push('iata_code = ?');
+      updateValues.push(iata_code);
+    }
+    if (description !== undefined) {
+      updateFields.push('description = ?');
+      updateValues.push(description);
+    }
+    if (website !== undefined) {
+      updateFields.push('website = ?');
+      updateValues.push(website);
+    }
+    if (contact_email !== undefined) {
+      updateFields.push('contact_email = ?');
+      updateValues.push(contact_email);
+    }
+    if (contact_discord !== undefined) {
+      updateFields.push('contact_discord = ?');
+      updateValues.push(contact_discord);
+    }
+    if (contact_other !== undefined) {
+      updateFields.push('contact_other = ?');
+      updateValues.push(contact_other);
+    }
+
+    // Color fields
+    if (primary_color !== undefined) {
+      updateFields.push('primary_color = ?');
+      updateValues.push(primary_color);
+    }
+    if (secondary_color !== undefined) {
+      updateFields.push('secondary_color = ?');
+      updateValues.push(secondary_color);
+    }
+    if (accent_color !== undefined) {
+      updateFields.push('accent_color = ?');
+      updateValues.push(accent_color);
+    }
+    if (text_on_primary !== undefined) {
+      updateFields.push('text_on_primary = ?');
+      updateValues.push(text_on_primary);
+    }
 
     // Only update logo if a new one is provided
     if (req.file) {
       updateFields.push('logo_url = ?');
       updateValues.push(req.file.path); // URL from Hostinger FTP
-    } else if (logo_url) {
+    } else if (logo_url !== undefined) {
       updateFields.push('logo_url = ?');
       updateValues.push(logo_url);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
     }
 
     // Add vaId to the end of values array
@@ -282,7 +353,13 @@ router.put('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadLogo
       updateValues
     );
 
-    res.json({ message: 'Virtual Airline updated successfully' });
+    // Fetch and return updated VA data
+    const [updatedVA] = await db.query('SELECT * FROM virtual_airlines WHERE id = ?', [vaId]);
+
+    res.json({ 
+      message: 'Virtual Airline updated successfully',
+      virtualAirline: updatedVA[0]
+    });
   } catch (error) {
     console.error('Update VA error:', error);
     res.status(500).json({ error: 'Failed to update Virtual Airline' });

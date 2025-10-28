@@ -8,14 +8,29 @@ const router = express.Router();
 router.get('/:vaId', async (req, res) => {
   try {
     const { vaId } = req.params;
+    const { departure, arrival } = req.query;
 
-    const [routes] = await db.query(`
+    let query = `
       SELECT 
         vr.*
       FROM va_routes vr
       WHERE vr.va_id = ?
-      ORDER BY vr.flight_number
-    `, [vaId]);
+    `;
+    const queryParams = [vaId];
+
+    // Add filters if provided
+    if (departure) {
+      query += ' AND vr.departure_icao = ?';
+      queryParams.push(departure);
+    }
+    if (arrival) {
+      query += ' AND vr.arrival_icao = ?';
+      queryParams.push(arrival);
+    }
+
+    query += ' ORDER BY vr.flight_number';
+
+    const [routes] = await db.query(query, queryParams);
 
     res.json({ routes });
   } catch (error) {
