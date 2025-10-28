@@ -11,6 +11,13 @@ router.get('/:vaId', async (req, res) => {
     const { vaId } = req.params;
     const now = new Date().toISOString();
 
+    // Fix any truncated statuses first
+    await db.query(`
+      UPDATE events 
+      SET status = 'upcoming' 
+      WHERE status = 'upcomin' AND va_id = ?
+    `, [vaId]);
+
     // Auto-update event statuses based on dates
     await db.query(`
       UPDATE events 
@@ -46,13 +53,20 @@ router.get('/va/:vaId/active', async (req, res) => {
 
     console.log('Fetching active events for VA:', vaId, 'at time:', now); // Debug
 
+    // Fix any truncated statuses first
+    await db.query(`
+      UPDATE events 
+      SET status = 'upcoming' 
+      WHERE status = 'upcomin' AND va_id = ?
+    `, [vaId]);
+
     // Auto-update event statuses based on dates
     const [updateResult] = await db.query(`
       UPDATE events 
       SET status = CASE
+        WHEN end_date < ? AND status != 'cancelled' THEN 'completed'
         WHEN start_date <= ? AND end_date >= ? AND status != 'cancelled' THEN 'active'
         WHEN start_date > ? AND status != 'cancelled' THEN 'upcoming'
-        WHEN end_date < ? AND status != 'cancelled' THEN 'completed'
         ELSE status
       END
       WHERE va_id = ?
