@@ -127,12 +127,30 @@ router.post('/:vaId', authMiddleware, checkVARole(['Owner', 'Admin']), uploadEve
       console.log('Using external URL:', cover_image_url);
     }
 
+    // Determine initial status based on dates
+    const now = new Date();
+    const startDate = new Date(start_date);
+    const endDate = new Date(end_date);
+    
+    let initialStatus = 'upcoming';
+    if (now >= startDate && now <= endDate) {
+      initialStatus = 'active';
+    } else if (now > endDate) {
+      initialStatus = 'completed';
+    }
+
+    console.log('Determined initial status:', initialStatus, 'based on dates:', {
+      now: now.toISOString(),
+      start: startDate.toISOString(),
+      end: endDate.toISOString()
+    });
+
     const [result] = await db.query(
-      'INSERT INTO events (va_id, name, description, event_type, cover_image, start_date, end_date, bonus_points, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [vaId, name, description || null, event_type, finalCoverImage, start_date, end_date, bonus_points || 0, userId]
+      'INSERT INTO events (va_id, name, description, event_type, cover_image, start_date, end_date, bonus_points, created_by, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [vaId, name, description || null, event_type, finalCoverImage, start_date, end_date, bonus_points || 0, userId, initialStatus]
     );
 
-    console.log('Event created successfully with ID:', result.insertId);
+    console.log('Event created successfully with ID:', result.insertId, 'and status:', initialStatus);
 
     res.status(201).json({
       message: 'Event created successfully',
