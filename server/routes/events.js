@@ -5,6 +5,22 @@ const { uploadEventMiddleware } = require('../middleware/upload');
 
 const router = express.Router();
 
+// Update all event statuses (can be called via cron or manually)
+router.post('/update-statuses', authMiddleware, async (req, res) => {
+  try {
+    // Call the stored procedure
+    await db.query('CALL update_all_event_statuses()');
+    
+    res.json({ 
+      message: 'Event statuses updated successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Update event statuses error:', error);
+    res.status(500).json({ error: 'Failed to update event statuses' });
+  }
+});
+
 // Get VA events
 router.get('/:vaId', async (req, res) => {
   try {
