@@ -49,6 +49,8 @@ router.get('/va/:vaId/pilot/active', authMiddleware, async (req, res) => {
     const { vaId } = req.params;
     const userId = req.user.id;
 
+    console.log('Fetching active tours for VA:', vaId, 'User:', userId);
+
     const [tours] = await db.query(`
       SELECT 
         t.*,
@@ -58,25 +60,25 @@ router.get('/va/:vaId/pilot/active', authMiddleware, async (req, res) => {
         tp.status as progress_status,
         tp.started_at,
         tp.completed_at,
-        (
-          SELECT COUNT(*) 
-          FROM va_tour_legs tl2 
-          WHERE tl2.tour_id = t.id 
-          AND JSON_CONTAINS(
-            COALESCE(tp.completed_legs, '[]'),
-            CAST(tl2.id AS JSON),
-            '$'
-          )
+        COALESCE(
+          (SELECT COUNT(*) 
+           FROM JSON_TABLE(
+             COALESCE(tp.completed_legs, '[]'),
+             '$[*]' COLUMNS(leg_id INT PATH '$')
+           ) AS jt
+          ), 0
         ) as completed_legs
       FROM va_tours t
       LEFT JOIN va_tour_legs tl ON t.id = tl.tour_id
       LEFT JOIN va_tour_progress tp ON t.id = tp.tour_id AND tp.user_id = ?
       WHERE t.va_id = ? 
       AND t.status = 'active'
-      AND (tp.id IS NULL OR tp.status IN ('not_started', 'in_progress'))
-      GROUP BY t.id, tp.id
+      GROUP BY t.id, tp.id, tp.current_leg, tp.status, tp.started_at, tp.completed_at, tp.completed_legs
       ORDER BY tp.started_at DESC, t.created_at DESC
     `, [userId, vaId]);
+
+    console.log('Tours found:', tours.length);
+    console.log('Tours data:', JSON.stringify(tours, null, 2));
 
     res.json({ tours });
   } catch (error) {
