@@ -65,7 +65,7 @@ router.post('/register', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, rememberMe } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Missing credentials' });
@@ -97,11 +97,14 @@ router.post('/login', async (req, res) => {
     // Update last login
     await db.query('UPDATE users SET last_login = NOW() WHERE id = ?', [user.id]);
 
-    // Generate token
+    // Generate token with appropriate expiration
+    // If rememberMe is true, token expires in 30 days, otherwise 7 days
+    const expiresIn = rememberMe ? '30d' : (process.env.JWT_EXPIRES_IN || '7d');
+    
     const token = jwt.sign(
       { id: user.id, email: user.email, username: user.username },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { expiresIn }
     );
 
     res.json({
