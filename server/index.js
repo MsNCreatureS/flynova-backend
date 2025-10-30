@@ -21,6 +21,7 @@ const superAdminRoutes = require('./routes/superadmin');
 const bugReportsRoutes = require('./routes/bugReports');
 const cabinAnnouncementsRoutes = require('./routes/cabinAnnouncements');
 const toursRoutes = require('./routes/tours');
+const liveTrackingRoutes = require('./routes/live-tracking');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -77,6 +78,7 @@ app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/bug-reports', bugReportsRoutes);
 app.use('/api/cabin-announcements', cabinAnnouncementsRoutes);
 app.use('/api/tours', toursRoutes);
+app.use('/api/live-tracking', liveTrackingRoutes);
 
 // API Root - Liste des endpoints disponibles
 app.get('/api', (req, res) => {

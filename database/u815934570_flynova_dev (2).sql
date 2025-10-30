@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3306
--- Généré le : mar. 28 oct. 2025 à 00:26
+-- Généré le : mer. 29 oct. 2025 à 23:40
 -- Version du serveur : 11.8.3-MariaDB-log
 -- Version de PHP : 7.2.34
 
@@ -135,6 +135,40 @@ CREATE TABLE `events` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `status` enum('upcoming','active','completed','cancelled') DEFAULT 'upcoming'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déclencheurs `events`
+--
+DELIMITER $$
+CREATE TRIGGER `event_status_before_insert` BEFORE INSERT ON `events` FOR EACH ROW BEGIN
+    -- Only update if status is not 'cancelled'
+    IF NEW.status != 'cancelled' THEN
+        IF NEW.end_date < NOW() THEN
+            SET NEW.status = 'completed';
+        ELSEIF NEW.start_date <= NOW() AND NEW.end_date >= NOW() THEN
+            SET NEW.status = 'active';
+        ELSE
+            SET NEW.status = 'upcoming';
+        END IF;
+    END IF;
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `event_status_before_update` BEFORE UPDATE ON `events` FOR EACH ROW BEGIN
+    -- Only update if status is not being set to 'cancelled' and was not already 'cancelled'
+    IF NEW.status != 'cancelled' AND OLD.status != 'cancelled' THEN
+        IF NEW.end_date < NOW() THEN
+            SET NEW.status = 'completed';
+        ELSEIF NEW.start_date <= NOW() AND NEW.end_date >= NOW() THEN
+            SET NEW.status = 'active';
+        ELSE
+            SET NEW.status = 'upcoming';
+        END IF;
+    END IF;
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -413,7 +447,14 @@ CREATE TABLE `virtual_airlines` (
   `primary_color` varchar(7) DEFAULT '#00c853' COMMENT 'Couleur principale (hex)',
   `secondary_color` varchar(7) DEFAULT '#00a843' COMMENT 'Couleur secondaire (hex)',
   `accent_color` varchar(7) DEFAULT '#00ff7f' COMMENT 'Couleur accent (hex)',
-  `text_on_primary` varchar(7) DEFAULT '#ffffff' COMMENT 'Couleur texte sur primaire (hex)'
+  `text_on_primary` varchar(7) DEFAULT '#ffffff' COMMENT 'Couleur texte sur primaire (hex)',
+  `background_color` varchar(7) DEFAULT '#f8fafc' COMMENT 'Couleur de fond du dashboard (hex)',
+  `navbar_color` varchar(7) DEFAULT '#1e293b' COMMENT 'Couleur de la navbar (hex)',
+  `card_background_color` varchar(7) DEFAULT '#ffffff' COMMENT 'Background color for cards/panels',
+  `navbar_title_color` varchar(7) DEFAULT '#1e293b' COMMENT 'Color for navbar title text',
+  `heading_color` varchar(7) DEFAULT '#0f172a' COMMENT 'Color for main headings/titles (h1, h2)',
+  `subheading_color` varchar(7) DEFAULT '#334155' COMMENT 'Color for secondary headings (h3, h4)',
+  `text_color` varchar(7) DEFAULT '#475569' COMMENT 'Color for general body text'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
