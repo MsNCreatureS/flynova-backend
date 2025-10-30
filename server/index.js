@@ -146,9 +146,27 @@ app.get('/api', (req, res) => {
   });
 });
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Health check - répond toujours OK même si la DB n'est pas prête
+app.get('/api/health', async (req, res) => {
+  const health = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  };
+
+  // Vérifier la connexion DB (optionnel - ne fait pas échouer le healthcheck)
+  try {
+    const db = require('./config/database');
+    const [rows] = await db.query('SELECT 1');
+    health.database = 'connected';
+  } catch (error) {
+    console.warn('⚠️  Database not ready:', error.message);
+    health.database = 'not_ready';
+    // On répond quand même OK pour que Railway considère le service en bonne santé
+  }
+
+  res.status(200).json(health);
 });
 
 // Error handling middleware
@@ -160,10 +178,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`✈️  FlyNova API Server running on port ${PORT}`);
+// Start server - écoute sur 0.0.0.0 pour Railway
+const HOST = process.env.HOST || '0.0.0.0';
+app.listen(PORT, HOST, () => {
+  console.log(`✈️  FlyNova API Server running on ${HOST}:${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🏥 Health check available at: http://${HOST}:${PORT}/api/health`);
 });
 
 module.exports = app;

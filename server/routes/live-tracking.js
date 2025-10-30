@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { authenticateToken } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 // Get all active flights on the map
 router.get('/active-flights', async (req, res) => {
@@ -32,7 +32,7 @@ router.get('/active-flights', async (req, res) => {
 });
 
 // Update flight position (called by tracker)
-router.post('/update-position', authenticateToken, async (req, res) => {
+router.post('/update-position', authMiddleware, async (req, res) => {
   try {
     const {
       flight_id,
@@ -139,7 +139,7 @@ router.get('/flight/:flightId', async (req, res) => {
 });
 
 // Manual cleanup endpoint (for admin/maintenance)
-router.delete('/cleanup', authenticateToken, async (req, res) => {
+router.delete('/cleanup', authMiddleware, async (req, res) => {
   try {
     // Delete stale tracking data
     const [result1] = await db.query(`
